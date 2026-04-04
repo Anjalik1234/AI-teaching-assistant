@@ -1,0 +1,13 @@
+I'd be happy to help clarify any questions about your Sigma web development course.
+
+So, regarding your question "where is the first website made", let's take a look at the video chunks.
+
+The first website is mentioned in two videos: "Installing VS Code & How Websites Work" (Video 1) and "Your First HTML Website" (Video 2). 
+
+In Video 1, it's mentioned that "Because in this video, we'll make our first website" at a timestamp of around 21.72 seconds.
+
+However, the actual content of making the first website is taught in Video 2, starting from approximately 31.92 seconds. It's also mentioned as "For some people, your first website of your life."
+
+If you'd like to see how the first website was made, I recommend checking out Video 2, where the tutorial begins at around 21.72 seconds.
+
+Is there anything else I can help with?

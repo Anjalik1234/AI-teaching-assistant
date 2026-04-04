@@ -134,15 +134,12 @@ def detect_weak_topics(session_queries, threshold=2):
     return weak_topics
 
 def create_embedding(text_list):
-    r = requests.post(
-        "http://localhost:11434/api/embed",
-        json={
-            "model": "bge-m3",
-            "input": text_list
-        }
-    )
-    return r.json()["embeddings"]
+    raise Exception("Runtime embedding disabled in deployment mode")
 
+
+@app.route("/")
+def home():
+    return "AI Teaching Assistant ML Service Running"
 
 @app.route("/semantic-search", methods=["POST"])
 def semantic_search():
@@ -199,7 +196,7 @@ def semantic_search():
 
     best_match = results[0]
     recommended = recommend_lectures(best_match["title"])
-    weak_topics = detect_weak_topics(session_queries)
+    weak_topics = []
 
     return jsonify({
         "query": query,

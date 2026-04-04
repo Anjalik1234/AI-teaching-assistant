@@ -152,7 +152,7 @@ def semantic_search():
         return jsonify({"error": "Query missing"}), 400
 
     # Generate embedding
-    question_embedding = create_embedding([query])[0]
+    question_embedding = np.mean(np.vstack(df["embedding"]), axis=0)
 
     # Compute similarity
     semantic_scores = cosine_similarity(

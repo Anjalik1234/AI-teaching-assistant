@@ -10,9 +10,9 @@ exports.askQuery = async (req, res) => {
       });
     }
 
-    // Call Python ML service
+    // Call deployed Python ML service
     const response = await axios.post(
-      "http://localhost:5001/semantic-search",
+      "https://ai-teaching-ml-service.onrender.com/semantic-search",
       { query }
     );
 

@@ -2,6 +2,7 @@ from flask import Flask, request, jsonify
 import pandas as pd
 import numpy as np
 import joblib
+import os
 import requests
 from sklearn.metrics.pairwise import cosine_similarity
 
@@ -209,5 +210,7 @@ def semantic_search():
     })
 
 
+
 if __name__ == "__main__":
-    app.run(port=5001, debug=True)
+    port = int(os.environ.get("PORT", 5000))
+    app.run(host="0.0.0.0", port=port)

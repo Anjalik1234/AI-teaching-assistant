@@ -39,7 +39,7 @@ function App() {
     try {
 
       const response = await axios.post(
-        "http://localhost:5000/api/ask",
+        "https://ai-teaching-node-backend.onrender.com/api/ask",
         { query: searchQuery }
       );
 

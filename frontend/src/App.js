@@ -165,30 +165,48 @@ function App() {
 
       )}
 
+      {result?.weak_topics_ranked?.length > 0 && (
+        <div style={{ marginTop: "30px" }}>
+          <h2>Topics You Should Revise</h2>
 
-      {/* WEAK TOPICS PANEL */}
+          {result.weak_topics_ranked.map((topic, index) => (
+            <div
+              key={index}
+              style={{
+                marginBottom: "10px",
+                padding: "10px",
+                borderRadius: "8px",
+                background: "#f4f6f8"
+              }}
+            >
+              <strong>
+                {topic.topic} {"⭐".repeat(Math.min(topic.score, 5))}
+              </strong>
 
-      {result?.weak_topics_detected?.length > 0 && (
-
-        <Card sx={{ marginTop: 4 }}>
-          <CardContent>
-
-            <Typography variant="h6">
-              Weak Topics Detected
-            </Typography>
-
-            {result.weak_topics_detected.map((topic, index) => (
-
-              <Typography key={index}>
-                • {topic}
-              </Typography>
-
-            ))}
-
-          </CardContent>
-        </Card>
-
+              <div
+                style={{
+                  height: "8px",
+                  background: "#ddd",
+                  borderRadius: "5px",
+                  marginTop: "5px"
+                }}
+              >
+                <div
+                  style={{
+                    width: `${topic.score * 20}px`,
+                    height: "8px",
+                    background: "#ff6b6b",
+                    borderRadius: "5px"
+                  }}
+                />
+              </div>
+            </div>
+          ))}
+        </div>
       )}
+
+
+
 
     </Container>
   );

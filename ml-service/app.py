@@ -5,6 +5,9 @@ import joblib
 import os
 import requests
 from sklearn.metrics.pairwise import cosine_similarity
+from collections import defaultdict
+
+topic_tracker = defaultdict(int)
 
 app = Flask(__name__)
 
@@ -104,34 +107,26 @@ def recommend_lectures(current_title, top_k=3):
     return next_lectures + semantic_fill
 
 
-def detect_weak_topics(session_queries, threshold=2):
+def detect_weak_topics(query, confidence):
+    topic = query.lower().strip()
 
-    if len(session_queries) == 0:
-        return []
+    if confidence < 0.6:
+        topic_tracker[topic] += 2
+    else:
+        topic_tracker[topic] += 1
 
-    query_embeddings = create_embedding(session_queries)
+    sorted_topics = sorted(
+        topic_tracker.items(),
+        key=lambda x: x[1],
+        reverse=True
+    )
 
-    topic_counter = {}
+    weak_topics_ranked = [
+        {"topic": t[0], "score": t[1]}
+        for t in sorted_topics[:5]
+    ]
 
-    for embedding in query_embeddings:
-
-        similarities = cosine_similarity(
-            lecture_vectors,
-            [embedding]
-        ).flatten()
-
-        best_match_index = similarities.argmax()
-        best_topic = lecture_titles[best_match_index]
-
-        topic_counter[best_topic] = topic_counter.get(best_topic, 0) + 1
-
-    weak_topics = []
-
-    for topic, count in topic_counter.items():
-        if count >= threshold:
-            weak_topics.append(topic)
-
-    return weak_topics
+    return weak_topics_ranked
 
 def create_embedding(text_list):
     raise Exception("Runtime embedding disabled in deployment mode")
@@ -151,8 +146,12 @@ def semantic_search():
     if not query:
         return jsonify({"error": "Query missing"}), 400
 
-    # Generate embedding
-    question_embedding = np.mean(np.vstack(df["embedding"]), axis=0)
+    query_vector = df[df["title"].str.contains(query, case=False, na=False)]
+
+    if not query_vector.empty:
+        question_embedding = np.mean(np.vstack(query_vector["embedding"]), axis=0)
+    else:
+        question_embedding = np.mean(np.vstack(df["embedding"]), axis=0)
 
     # Compute similarity
     semantic_scores = cosine_similarity(
@@ -196,15 +195,17 @@ def semantic_search():
 
     best_match = results[0]
     recommended = recommend_lectures(best_match["title"])
-    weak_topics = []
+
+    confidence = best_match["confidence"]
+    weak_topics_ranked = detect_weak_topics(query, confidence)
 
     return jsonify({
-        "query": query,
-        "best_match": best_match,
-        "recommended_lectures": recommended,
-        "weak_topics_detected": weak_topics,
-        "other_matches": results[1:]
-    })
+    "query": query,
+    "best_match": best_match,
+    "recommended_lectures": recommended,
+    "weak_topics_ranked": weak_topics_ranked,
+    "other_matches": results[1:]
+})
 
 
 

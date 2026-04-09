@@ -325,7 +325,7 @@ function App() {
                     ))}
 
                   </div>
-                  {result?.best_match && (
+                  {result?.best_match ? (
                     <div
                       style={{
                         marginTop: "25px",
@@ -355,7 +355,21 @@ function App() {
                         {result.best_match.confidence.toFixed(3)}
                       </p>
                     </div>
-                  )}
+                  ) : result?.message ? (
+                    <div
+                      style={{
+                        marginTop: "25px",
+                        padding: "18px",
+                        backgroundColor: "#0f172a",
+                        borderRadius: "10px",
+                        border: "1px solid #334155",
+                        textAlign: "left",
+                        color: "#facc15"
+                      }}
+                    >
+                      {result.message}
+                    </div>
+                  ) : null}
 
                 </div>
 
@@ -366,13 +380,28 @@ function App() {
                 animate={{ opacity: 1, x: 0 }}
                 style={{ ...styles.panel, ...styles.videoPanel }}
               >
-                <h4 style={styles.panelTitle}>Lecture Playback</h4>
-                <iframe
-                  style={styles.iframe}
-                  src={`https://www.youtube.com/embed/${videoMap[result.best_match.video_number]}?start=${Math.floor(result.best_match.start)}`}
-                  title="Lecture Player"
-                  allowFullScreen
-                />
+                {result?.best_match ? (
+                  <>
+                    <h4 style={styles.panelTitle}>Lecture Playback</h4>
+
+                    <iframe
+                      style={styles.iframe}
+                      src={`https://www.youtube.com/embed/${videoMap[result.best_match.video_number]}?start=${Math.floor(result.best_match.start)}`}
+                      title="Lecture Player"
+                      allowFullScreen
+                    />
+                  </>
+                ) : (
+                  <div
+                    style={{
+                      color: "#facc15",
+                      fontSize: "16px",
+                      textAlign: "center"
+                    }}
+                  >
+                    No lecture video available for this topic in the current dataset.
+                  </div>
+                )}
               </motion.div>
             </div>
 

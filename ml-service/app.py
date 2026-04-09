@@ -177,6 +177,27 @@ def semantic_search():
     if not query:
         return jsonify({"error": "Query missing"}), 400
 
+
+    # Detect domain first
+    domain = detect_domain(query)
+
+    dataset_domain = "web development"
+
+    # If query belongs to another domain (Python, ML, DBMS, etc.)
+    if domain and domain != dataset_domain:
+
+        return jsonify({
+            "query": query,
+            "message": "This assistant currently retrieves timestamp-level results from the Web Development course dataset. However, related topics from other domains are suggested below.",
+            "best_match": None,
+            "recommended_lectures": [],
+            "domain_recommendations": get_domain_recommendations(query),
+            "weak_topics_ranked": detect_weak_topics(query, 0),
+            "other_matches": []
+        })
+
+
+    # Continue normal semantic search for Web Dev queries
     query_vector = df[df["title"].str.contains(query, case=False, na=False)]
 
     if not query_vector.empty:
@@ -184,11 +205,12 @@ def semantic_search():
     else:
         question_embedding = np.mean(np.vstack(df["embedding"]), axis=0)
 
-    # Compute similarity
+
     semantic_scores = cosine_similarity(
         np.vstack(df["embedding"]),
         [question_embedding]
     ).flatten()
+
 
     final_scores = []
 
@@ -204,6 +226,7 @@ def semantic_search():
         )
 
         final_scores.append(combined_score)
+
 
     final_scores = np.array(final_scores)
 
@@ -224,18 +247,21 @@ def semantic_search():
             "confidence": round(float(final_scores[idx]), 3)
         })
 
+
     best_match = results[0]
+
     recommended = recommend_lectures(best_match["title"])
-    domain_recommendations = get_domain_recommendations(query)
 
     confidence = best_match["confidence"]
+
     weak_topics_ranked = detect_weak_topics(query, confidence)
+
 
     return jsonify({
         "query": query,
         "best_match": best_match,
         "recommended_lectures": recommended,
-        "domain_recommendations": domain_recommendations,
+        "domain_recommendations": [],
         "weak_topics_ranked": weak_topics_ranked,
         "other_matches": results[1:]
     })

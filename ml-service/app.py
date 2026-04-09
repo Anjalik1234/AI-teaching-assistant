@@ -7,6 +7,8 @@ import requests
 from sklearn.metrics.pairwise import cosine_similarity
 from collections import defaultdict
 
+from domain_topics import domain_topics
+
 topic_tracker = defaultdict(int)
 
 app = Flask(__name__)
@@ -33,6 +35,35 @@ def keyword_overlap_score(query, text):
 
     overlap = query_words.intersection(text_words)
     return len(overlap) / len(query_words)
+
+
+def detect_domain(query):
+
+    query = query.lower()
+
+    domain_keywords = {
+        "python": ["python", "loop", "function", "dictionary"],
+        "machine learning": ["regression", "classification", "model", "training"],
+        "dbms": ["sql", "database", "transaction", "normalization"],
+        "data structures": ["stack", "queue", "tree", "graph"],
+        "web development": ["html", "css", "javascript", "react"]
+    }
+
+    for domain, keywords in domain_keywords.items():
+        for word in keywords:
+            if word in query:
+                return domain
+
+    return None
+
+
+def get_domain_recommendations(query):
+    domain = detect_domain(query)
+
+    if domain:
+        return domain_topics[domain]
+
+    return []
 
 
 def title_match_score(query, title):
@@ -108,7 +139,7 @@ def recommend_lectures(current_title, top_k=3):
 
 
 def detect_weak_topics(query, confidence):
-    topic = query.lower().strip()
+    topic = detect_domain(query) or query.lower().strip()
 
     if confidence < 0.6:
         topic_tracker[topic] += 2
@@ -195,17 +226,19 @@ def semantic_search():
 
     best_match = results[0]
     recommended = recommend_lectures(best_match["title"])
+    domain_recommendations = get_domain_recommendations(query)
 
     confidence = best_match["confidence"]
     weak_topics_ranked = detect_weak_topics(query, confidence)
 
     return jsonify({
-    "query": query,
-    "best_match": best_match,
-    "recommended_lectures": recommended,
-    "weak_topics_ranked": weak_topics_ranked,
-    "other_matches": results[1:]
-})
+        "query": query,
+        "best_match": best_match,
+        "recommended_lectures": recommended,
+        "domain_recommendations": domain_recommendations,
+        "weak_topics_ranked": weak_topics_ranked,
+        "other_matches": results[1:]
+    })
 
 
 

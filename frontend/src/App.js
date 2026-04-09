@@ -400,33 +400,34 @@ function App() {
                       📘 {lecture}
                     </div>
                   ))}
-                  {result.domain_recommendations?.length > 0 && (
-                    <>
-                      <h4 style={{ ...styles.panelTitle, marginTop: "20px" }}>
-                        Related Topics from Other Domains
-                      </h4>
-
-                      <div style={styles.chipList}>
-                        {result.domain_recommendations.map((topic, index) => (
-                          <div
-                            key={index}
-                            onClick={() => handleSearch(topic)}
-                            style={{
-                              background: "#0f172a",
-                              padding: "16px",
-                              borderRadius: "10px",
-                              border: "1px solid #334155",
-                              cursor: "pointer",
-                              transition: "0.2s",
-                            }}
-                          >
-                            🧠 {topic}
-                          </div>
-                        ))}
-                      </div>
-                    </>
-                  )}
                 </div>
+
+                {result.domain_recommendations?.length > 0 && (
+                  <>
+                    <h4 style={{ ...styles.panelTitle, marginTop: "20px" }}>
+                      Related Topics from Other Domains
+                    </h4>
+
+                    <div style={styles.chipList}>
+                      {result.domain_recommendations.map((topic, index) => (
+                        <div
+                          key={index}
+                          onClick={() => handleSearch(topic)}
+                          style={{
+                            background: "#0f172a",
+                            padding: "16px",
+                            borderRadius: "10px",
+                            border: "1px solid #334155",
+                            cursor: "pointer",
+                            transition: "0.2s",
+                          }}
+                        >
+                          🧠 {topic}
+                        </div>
+                      ))}
+                    </div>
+                  </>
+                )}
               </motion.div>
 
               <motion.div

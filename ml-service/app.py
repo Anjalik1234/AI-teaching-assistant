@@ -46,7 +46,6 @@ def detect_domain(query):
         "machine learning": ["regression", "classification", "model", "training"],
         "dbms": ["sql", "database", "transaction", "normalization"],
         "data structures": ["stack", "queue", "tree", "graph"],
-        "web development": ["html", "css", "javascript", "react"]
     }
 
     for domain, keywords in domain_keywords.items():

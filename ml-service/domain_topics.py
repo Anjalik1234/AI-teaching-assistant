@@ -33,14 +33,5 @@ domain_topics = {
         "stacks",
         "queues",
         "trees",
-        "graphs"
-    ],
-
-    "web development": [
-        "html basics",
-        "css flexbox",
-        "javascript dom",
-        "react components",
-        "nodejs basics"
     ]
 }

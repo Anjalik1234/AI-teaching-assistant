@@ -1,20 +1,16 @@
 domain_topics = {
     "python": [
-        "python variables",
-        "python loops",
+        "python variables and loops",
         "python functions",
-        "python lists",
-        "python dictionaries",
+        "python lists and dictionaries",
         "python OOP",
         "python decorators",
         "file handling in python"
     ],
 
     "machine learning": [
-        "supervised learning",
-        "unsupervised learning",
-        "regression",
-        "classification",
+        "supervised and unsupervised learning",
+        "regression and classification",
         "decision trees",
         "neural networks"
     ],

@@ -242,7 +242,7 @@ function App() {
                 </button>
               </div>
               <div style={styles.chipsContainer}>
-                {["First HTML website", "VS Code Setup", "CSS Selectors", "React Hooks"].map((example) => (
+                {["HTML website", "VS Code Setup", "CSS Selectors", "React Hooks"].map((example) => (
                   <button
                     key={example}
                     style={styles.chip}
@@ -305,7 +305,7 @@ function App() {
                   }}>
 
                     {[
-                      "First HTML website",
+                      "HTML website",
                       "VS Code Setup",
                       "CSS Selectors",
                       "React Hooks"
@@ -348,11 +348,6 @@ function App() {
                         <strong>Start Time:</strong>{" "}
                         {Math.floor(result.best_match.start / 60)}:
                         {String(Math.floor(result.best_match.start % 60)).padStart(2, "0")}
-                      </p>
-
-                      <p style={{ margin: "4px 0", color: "#cbd5e1" }}>
-                        <strong>Confidence:</strong>{" "}
-                        {result.best_match.confidence.toFixed(3)}
                       </p>
                     </div>
                   ) : result?.message ? (

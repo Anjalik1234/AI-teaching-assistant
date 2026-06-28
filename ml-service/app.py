@@ -6,10 +6,29 @@ import os
 import requests
 from sklearn.metrics.pairwise import cosine_similarity
 from collections import defaultdict
+import json
 
 from domain_topics import domain_topics
 
-topic_tracker = defaultdict(int)
+learner_profile = defaultdict(
+    lambda: {
+        "questions": 0,
+        "confidences": []
+    }
+)
+
+PROFILE_FILE = "learner_profile.json"
+
+if os.path.exists(PROFILE_FILE):
+
+    with open(PROFILE_FILE, "r") as f:
+
+        saved_profile = json.load(f)
+
+        for topic, data in saved_profile.items():
+
+            learner_profile[topic]["questions"] = data["questions"]
+            learner_profile[topic]["confidences"] = data["confidences"]
 
 app = Flask(__name__)
 
@@ -17,12 +36,6 @@ app = Flask(__name__)
 df = joblib.load("embeddings.joblib")
 df["number"] = df["number"].astype(int)
 
-lecture_sequence = (
-    df[["title", "number"]]
-    .drop_duplicates()
-    .sort_values("number")
-    .reset_index(drop=True)
-)
 
 session_queries = []
 
@@ -65,16 +78,6 @@ def get_domain_recommendations(query):
     return []
 
 
-def title_match_score(query, title):
-    query_words = set(query.lower().split())
-    title_words = set(title.lower().split())
-
-    if len(query_words) == 0:
-        return 0
-
-    overlap = query_words.intersection(title_words)
-    return len(overlap) / len(query_words)
-
 
 def build_lecture_embeddings(df):
     lecture_embeddings = {}
@@ -90,76 +93,116 @@ lecture_embedding_map = build_lecture_embeddings(df)
 lecture_titles = list(lecture_embedding_map.keys())
 lecture_vectors = np.vstack(list(lecture_embedding_map.values()))
 
-def recommend_lectures(current_title, top_k=3):
-
-    if current_title not in lecture_embedding_map:
-        return []
-
-    # Get current lecture number
-    current_row = lecture_sequence[
-        lecture_sequence["title"] == current_title
-    ]
-
-    if current_row.empty:
-        return []
-
-    current_number = current_row["number"].values[0]
-
-    # Step 1: Get next lectures in course order
-    next_lectures = lecture_sequence[
-        lecture_sequence["number"] > current_number
-    ]["title"].head(top_k).tolist()
-
-    if len(next_lectures) >= top_k:
-        return next_lectures
-
-    # Step 2: fallback to semantic similarity if needed
-    current_vector = lecture_embedding_map[current_title]
+def recommend_lectures(query_embedding, current_title=None, top_k=3):
 
     similarities = cosine_similarity(
         lecture_vectors,
-        [current_vector]
+        [query_embedding]
     ).flatten()
 
     ranked_indices = similarities.argsort()[::-1]
 
-    semantic_fill = []
+    recommendations = []
+
+    print("\nLecture Similarities:")
 
     for idx in ranked_indices:
+
         title = lecture_titles[idx]
+        score = similarities[idx]
 
-        if title != current_title and title not in next_lectures:
-            semantic_fill.append(title)
+        print(f"{title} --> {score:.4f}")
 
-        if len(next_lectures) + len(semantic_fill) == top_k:
+        if current_title and title == current_title:
+            continue
+
+        recommendations.append(title)
+
+        if len(recommendations) == top_k:
             break
 
-    return next_lectures + semantic_fill
+    return recommendations
 
 
-def detect_weak_topics(query, confidence):
-    topic = detect_domain(query) or query.lower().strip()
+def detect_weak_topics(topic, confidence):
 
-    if confidence < 0.6:
-        topic_tracker[topic] += 2
-    else:
-        topic_tracker[topic] += 1
+    # Update learner profile
+    learner_profile[topic]["questions"] += 1
+    learner_profile[topic]["confidences"].append(confidence)
 
-    sorted_topics = sorted(
-        topic_tracker.items(),
-        key=lambda x: x[1],
-        reverse=True
+    weak_topics = []
+
+    for topic_name, data in learner_profile.items():
+
+        avg_confidence = (
+            sum(data["confidences"]) /
+            len(data["confidences"])
+        )
+
+        # Assign proficiency level
+        if avg_confidence >= 0.85:
+            status = "Strong"
+
+        elif avg_confidence >= 0.70:
+            status = "Moderate"
+
+        else:
+            status = "Needs Practice"
+
+        weak_topics.append({
+
+            # Existing fields (frontend compatibility)
+            "topic": topic_name,
+            "score": round((1 - avg_confidence) * 100, 1),
+
+            # New fields
+            "questions": data["questions"],
+            "average_confidence": round(avg_confidence, 3),
+            "status": status
+
+        })
+
+    # Lowest confidence first
+    weak_topics.sort(
+        key=lambda x: x["average_confidence"]
     )
 
-    weak_topics_ranked = [
-        {"topic": t[0], "score": t[1]}
-        for t in sorted_topics[:5]
-    ]
+    with open(PROFILE_FILE, "w") as f:
 
-    return weak_topics_ranked
+        json.dump(
+            dict(learner_profile),
+            f,
+            indent=4
+        )
+
+    return weak_topics[:5]
+
+
 
 def create_embedding(text_list):
-    raise Exception("Runtime embedding disabled in deployment mode")
+    r = requests.post(
+        "http://localhost:11434/api/embed",
+        json={
+            "model": "bge-m3",
+            "input": text_list
+        }
+    )
+
+    r.raise_for_status()
+
+    return r.json()["embeddings"]
+
+
+def inference(prompt):
+    r = requests.post("http://localhost:11434/api/generate", json={
+        # "model": "deepseek-r1",
+        "model": "llama3.2",
+        "prompt": prompt,
+        "stream": False
+    })
+
+    response = r.json()
+    return response
 
 
 @app.route("/")
@@ -196,13 +239,7 @@ def semantic_search():
         })
 
 
-    # Continue normal semantic search for Web Dev queries
-    query_vector = df[df["title"].str.contains(query, case=False, na=False)]
-
-    if not query_vector.empty:
-        question_embedding = np.mean(np.vstack(query_vector["embedding"]), axis=0)
-    else:
-        question_embedding = np.mean(np.vstack(df["embedding"]), axis=0)
+    question_embedding = create_embedding([query])[0]
 
 
     semantic_scores = cosine_similarity(
@@ -216,12 +253,10 @@ def semantic_search():
     for i, row in df.iterrows():
 
         keyword_score = keyword_overlap_score(query, row["text"])
-        title_score = title_match_score(query, row["title"])
 
         combined_score = (
-            0.5 * semantic_scores[i]
-            + 0.2 * keyword_score
-            + 0.3 * title_score
+            0.9 * semantic_scores[i]
+            + 0.1 * keyword_score
         )
 
         final_scores.append(combined_score)
@@ -246,22 +281,71 @@ def semantic_search():
             "confidence": round(float(final_scores[idx]), 3)
         })
 
+    context = ""
+
+    for result in results:
+        start_minutes = int(result["start"] // 60)
+        start_seconds = int(result["start"] % 60)
+
+        context += (
+            f"Video {result['video_number']} - {result['title']}\n"
+            f"Timestamp: {start_minutes}:{start_seconds:02d}\n"
+            f"Transcript: {result['text']}\n\n"
+        )
+
+
+    prompt = f"""
+    You are an AI Teaching Assistant for a Web Development course.
+
+    Use ONLY the information provided below to answer the student's question.
+
+    If the answer is not contained in the provided context, politely say that it is not covered in the available course material.
+
+    Retrieved Course Content:
+
+    {context}
+
+    Student Question:
+    {query}
+
+    Instructions:
+    - Give a clear and beginner-friendly explanation.
+    - Mention the most relevant video number.
+    - Mention the timestamp in MM:SS format.
+    - If multiple videos are relevant, mention them.
+    - Never make up information that is not present in the retrieved context.
+    """
+
 
     best_match = results[0]
 
-    recommended = recommend_lectures(best_match["title"])
+    recommended = recommend_lectures(question_embedding, best_match["title"])
 
     confidence = best_match["confidence"]
 
-    weak_topics_ranked = detect_weak_topics(query, confidence)
+    weak_topics_ranked = detect_weak_topics(best_match["title"], confidence)
+
+    llm_response = inference(prompt)
+
+    answer = llm_response.get(
+        "response",
+        "Sorry, I couldn't generate an answer."
+    )
 
 
     return jsonify({
         "query": query,
+
+        "answer": answer,
+
         "best_match": best_match,
+
         "recommended_lectures": recommended,
+
         "domain_recommendations": [],
+
         "weak_topics_ranked": weak_topics_ranked,
+
         "other_matches": results[1:]
     })
 

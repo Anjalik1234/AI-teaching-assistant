@@ -12,7 +12,7 @@ exports.askQuery = async (req, res) => {
 
     // Call deployed Python ML service
     const response = await axios.post(
-      "https://ai-teaching-ml-service.onrender.com/semantic-search",
+      "http://127.0.0.1:5000/semantic-search",
       { query }
     );
 

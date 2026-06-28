@@ -27,7 +27,7 @@ def inference(prompt):
     print(response)
     return response
 
-df = joblib.load('embeddings.joblib')
+df = joblib.load('ml-service/embeddings.joblib')
 
 
 incoming_query = input("Ask a Question: ")

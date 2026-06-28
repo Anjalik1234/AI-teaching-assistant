@@ -197,10 +197,11 @@ function App() {
     if (!searchQuery) return;
     try {
       const response = await axios.post(
-        "https://ai-teaching-node-backend.onrender.com/api/ask",
+        "http://localhost:5001/api/ask",
         { query: searchQuery }
       );
       setResult(response.data);
+      console.log(response.data);
     } catch (error) {
       console.error("Search failed:", error);
     }
@@ -325,6 +326,38 @@ function App() {
                     ))}
 
                   </div>
+                  {result?.answer && (
+                    <div
+                      style={{
+                        marginTop: "25px",
+                        marginBottom: "20px",
+                        padding: "20px",
+                        backgroundColor: "#0f172a",
+                        borderRadius: "10px",
+                        border: "1px solid #334155",
+                        textAlign: "left"
+                      }}
+                    >
+                      <h3
+                        style={{
+                          color: "#22d3ee",
+                          marginBottom: "12px"
+                        }}
+                      >
+                        🤖 AI Explanation
+                      </h3>
+
+                      <p
+                        style={{
+                          color: "#e2e8f0",
+                          lineHeight: "1.7",
+                          whiteSpace: "pre-wrap"
+                        }}
+                      >
+                        {result.answer}
+                      </p>
+                    </div>
+                  )}
                   {result?.best_match ? (
                     <div
                       style={{
@@ -465,55 +498,67 @@ function App() {
                 <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
                   {result.weak_topics_ranked?.map((topic, index) => {
 
-                    let level = "";
-                    let color = "";
+                    let color = "#22c55e";
 
-                    if (topic.score >= 7) {
-                      level = "Strong";
-                      color = "#22c55e";
-                    }
-                    else if (topic.score >= 4) {
-                      level = "Moderate";
+                    if (topic.status === "Moderate")
                       color = "#facc15";
-                    }
-                    else {
-                      level = "Needs Practice";
+
+                    if (topic.status === "Needs Practice")
                       color = "#ef4444";
-                    }
 
                     return (
                       <div
                         key={index}
                         style={{
-                          display: "flex",
-                          justifyContent: "space-between",
-                          alignItems: "center",
                           background: "#0f172a",
-                          padding: "14px 16px",
+                          padding: "16px",
                           borderRadius: "8px",
                           border: "1px solid #334155"
                         }}
                       >
-                        <span style={{ color: "#e2e8f0" }}>
-                          {topic.topic}
-                        </span>
+
+                        <h4
+                          style={{
+                            margin: 0,
+                            color: "#f8fafc",
+                            marginBottom: "10px"
+                          }}
+                        >
+                          📘 {topic.topic}
+                        </h4>
+
+                        <div
+                          style={{
+                            color: "#cbd5e1",
+                            fontSize: "14px",
+                            marginBottom: "6px"
+                          }}
+                        >
+                          Questions Asked: <b>{topic.questions}</b>
+                        </div>
+
+                        <div
+                          style={{
+                            color: "#cbd5e1",
+                            fontSize: "14px",
+                            marginBottom: "12px"
+                          }}
+                        >
+                          Average Retrieval Score: <b>{topic.average_confidence}</b>
+                        </div>
 
                         <span
                           style={{
                             background: color,
-                            width: "100px",
-                            height: "32px",
-                            display: "flex",
-                            alignItems: "center",
-                            justifyContent: "center",
+                            padding: "6px 16px",
                             borderRadius: "6px",
-                            fontSize: "13px",
                             fontWeight: "600",
                             color: "#000"
                           }}
                         >
-                          {level}
+                          {topic.status}
                         </span>
+
                       </div>
                     );
                   })}
